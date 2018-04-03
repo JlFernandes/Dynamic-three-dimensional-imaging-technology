@@ -1,23 +1,6 @@
 function [] =findcolor()
 clear all;close all;clc
-
-[xx,yy]=meshgrid(0 :160 ,0: 160);  %生成网格点
-
-zz=ones(161,161)*9;
-h=surf(zz);
-set(gca,'nextplot','replacechildren');
-axis([0 160 0 160 -20 60]);
-shading interp ;
-colormap(gray); 
-view([0,0,1]);
-load('C:\Users\hp\Desktop\bishe\图1\标定\A.mat');
-load('C:\Users\hp\Desktop\bishe\图1\标定\AX.mat');
-load('C:\Users\hp\Desktop\bishe\图1\标定\AY.mat');
-for img =100:10:990
-IMGG = {imread(['acA640-750uc__21815743__20160413_164226388_0',num2str(img),'.bmp'])};
-IMG=IMGG{1};
-% IMG=imread('acA640-750uc__21815743__20160413_165347952_0249.bmp');
-% figure,imshow(IMG);
+IMG=imread('0.bmp');
 IMGr=IMG(:,:,1);
 IMGg=IMG(:,:,2);
 IMGb=IMG(:,:,3);
@@ -26,9 +9,7 @@ D=zeros(480,640);
 %译码矩阵
 N=zeros(480,640);
 %探测距离
-z1=10;
-%使用
-mmm=25:80;
+z=10;
 %% 图片处理
 J=fspecial('average',5);
 J1=fspecial('average');
@@ -44,18 +25,18 @@ IMGr(I)=0;
 IMGg(I)=0;
 IMGb(I)=0;
 %% 颜色距离矩阵
-for y =1:z1:480
+for y =1:z:480
     for x =1:639
         D(y,x)=(IMGr(y,x+1)-IMGr(y,x))^2+(IMGg(y,x+1)-IMGg(y,x))^2+(IMGb(y,x+1)-IMGb(y,x))^2 ;
     end
 end
 D=filter2(J,D);
-%   D=filter2(J2,D);
+D=filter2(J2,D);
 %% 展示 z=10时
-%    showchance(D,IMGr,IMGg,IMGb);
+ showchance(D,IMGr,IMGg,IMGb);
 %% 分界M译码
 load('C:\Users\hp\Desktop\bishe\图\标定\Color_Code.mat');
-for y =1:z1:480
+for y =1:z:480
     x1=1;
     c1=0;
     c2=0;
@@ -74,7 +55,7 @@ for y =1:z1:480
             if c2==0
                 continue
             end
-            for i=mmm  %使用范围
+            for i=3:36  %使用范围
                 if c1==Code(i-2)&&c2==Code(i-1)&&c3==Code(i)
                     N(y,x)=i;
                 end
@@ -85,53 +66,35 @@ end
 N=jiaozheng(N);
 
 %% 标定
-% load('C:\Users\hp\Desktop\bishe\图1\标定\1\N0.mat');
-
+load('C:\Users\hp\Desktop\bishe\图\标定\NUM40.mat');
+%%
 i=1;
-for y =1:z1:480
+for y =1:z:480
   for x =1:640
-      if N(y,x)~=0&&25<=N(y,x)&&N(y,x)<=80
-          a=A(N(y,x),:);
-          ZZ=a*[x^3;y^3;(x^2)*y;(y^2)*x;x*y;x^2;y^2;x;y;1];
-          z=ZZ;
-          XX=AX*[x^3;y^3;z^3;x*y*z;(x^2)*y;(y^2)*x;(x^2)*z;(z^2)*x;(z^2)*y;(y^2)*z;x*y;x*z;z*y;x^2;y^2;z^2;x;y;z;1];
-          YY=AY*[x^3;y^3;z^3;x*y*z;(x^2)*y;(y^2)*x;(x^2)*z;(z^2)*x;(z^2)*y;(y^2)*z;x*y;x*z;z*y;x^2;y^2;z^2;x;y;z;1];
-          if -20<=XX&&XX<=140&&-5<=YY&&YY<=140&&-10<=ZZ&&ZZ<=70
-      
-              X(i)=XX+20;
-              Y(i)=YY+20;
-              Z(i)=ZZ;
-          i=i+1;
+      if N(y,x)~=0
+          for xz=1:640
+              if N(y,x)==N40(y,xz)  
+                  if (x-xz)>=-20&&(x-xz)<=50
+                      X(i)=xz;
+                      Y(i)=y;
+                      Z(i)=(x-xz);
+                      i=i+1;
+                  end
+              end
           end
       end
   end
-end 
-
-
-% figure,scatter3(X,Y,Z);'nearest'
-% axis([-20 140 -20 140 0 48])
-J3=fspecial('average',8);
-% [xx,yy]=meshgrid(-20 :10:140 ,-20:10: 140);  %生成网格点
-zz=griddata(X,Y,Z,xx,yy);%你的数据得插值成网格型数据。
-
-zz(isnan(zz))=10;
-zz(zz>-15&zz<10)=10;
-
-zz=filter2(J3,zz);
-
-set(h,'Zdata',zz) ;
- 
-% surf(xx,yy,zz);
-% shading interp ;
-% colormap(gray); 
-% view([0,0,1]);
-
-saveas(h,['C:\Users\hp\Desktop\bishe\888\gift1\',num2str(img) '.jpg'])
-
-% M(:,frame)= getframe;
-% frame=frame+1;
 end
-% movie(M);
+
+[xx,yy]=meshgrid(1:z:600,1:z:700);  %生成网格点
+zz=griddata(X,Y,Z,xx,yy);%你的数据得插值成网格型数据。
+ zz=filter2(J1,zz);
+figure,surf(xx,yy,zz);
+shading interp ;
+colormap(gray);
+
+figure,scatter3(X,Y,Z);
+
 end
 
 function result= colorset(r,g,b)%分辨颜色
@@ -156,7 +119,7 @@ if da~=0
     %特殊阀值设定
     if result<1.9&&result>1
         result=1;
-    elseif result<=2.5&&result>=1.9
+    elseif result<=2.7&&result>=1.9
         result=2;
     elseif result<6.3&&result>5.3
         result=6;
@@ -222,19 +185,6 @@ for y=1:480
             c=x;
         end
         
-    end
-end
-for y=1:480
-    for x=1:640
-        if N(y,x)~=0
-        NN=N(y,x);
-        for xx=x+1:640
-            if N(y,xx)==NN
-                N(y,x)=0;
-                N(y,xx)=0;
-            end
-        end
-        end
     end
 end
 result=N;
